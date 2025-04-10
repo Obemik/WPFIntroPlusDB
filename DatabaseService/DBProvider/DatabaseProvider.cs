@@ -1,32 +1,26 @@
 using System.Data.SqlClient;
 using Dapper;
 using DatabaseService.DBCommands;
-
+ 
 namespace DatabaseService.DBProvider;
-
-public class DatabaseProvider
+ 
+public class DatabaseProvider(string connectionString)
 {
-    public string ConnectionString { get; set; }
-    public DatabaseProvider(string connectionString)
-    {
-        ConnectionString = connectionString;
-    }
-
     [Obsolete("Obsolete")]
-    public void CreateDatabase()
+    public async Task InitializeDatabaseAsync()
     {
-        try
-        {
-            using var connection = new SqlConnection(ConnectionString);
-            connection.Open();
-            var dbName = "School";
-            connection.ExecuteAsync(DbCommands.CreateDBCommandWithNotExists(dbName));
-        }
-        catch (SqlException e)
-        {
-            throw new Exception(e.Message);
-        }
+        await using var connection = new SqlConnection(connectionString);
+        await connection.OpenAsync();
+        await connection.ExecuteAsync(DbCommands.CreateDbCommandWithNotExists("School"));
+        await connection.ExecuteAsync(DbCommands.CreateTablesCommand());
     }
-    
-    
+     
+    [Obsolete("Obsolete")]
+    public async Task ResetDatabaseAsync()
+    {
+        await using var connection = new SqlConnection(connectionString);
+        await connection.OpenAsync();
+        await connection.ExecuteAsync(DbCommands.DropTablesCommand());
+        await connection.ExecuteAsync(DbCommands.CreateTablesCommand());
+    }
 }
